@@ -1,7 +1,7 @@
 import requests
 import json
 
-security_header = {'X-Starfighter-Authorization':'cbcd4ff88d9d6973a0dec57aba357bcefdf71ef8'}
+security_header = {'X-Starfighter-Authorization':'f7303e2b760c835bcf2dddfd1e7aa426a4ab17fa'}
 
 
 class Gateway(object):
@@ -33,11 +33,22 @@ class Gateway(object):
         data['orderType'] = 'limit'
 
         r = requests.post(url, headers = security_header, data = json.dumps(data))
+        if r.status_code == 200:
+            return json.loads(r.content).get('id')
+        else:
+            return None
 
-        return r.status_code
+    def retrieve_status(self, symbol, order):
+        url = 'https://api.stockfighter.io/ob/api/venues/' + self.venue + '/stocks/' + symbol + '/orders/' + order
+        r = requests.get(url, headers = security_header)
 
 class Quote:
     def __init__(self, symbol, bid, ask):
         self.symbol = symbol
         self.bid = bid
         self.ask = ask
+
+
+#import sf_client as sf
+#g = sf.Gateway('BAI24378394', 'OJPEX')
+#g.buy_limit('WBM', 1, 98)
