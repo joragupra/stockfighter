@@ -1,54 +1,78 @@
 import requests
 import json
 
-security_header = {'X-Starfighter-Authorization':'f7303e2b760c835bcf2dddfd1e7aa426a4ab17fa'}
+api_key = 'f7303e2b760c835bcf2dddfd1e7aa426a4ab17fa'
 
 
 class Gateway(object):
     def __init__(self, account, venue):
         self.account = account
         self.venue = venue
+        self.security_header = {'X-Starfighter-Authorization':api_key}
+
+    def __get(self, url):
+        return requests.get(url, headers=self.security_header)
 
     def retrieve_quote(self, stock_symbol):
         url = 'https://api.stockfighter.io/ob/api/venues/' + self.venue + '/stocks/' + stock_symbol + '/quote'
-        r = requests.get(url, headers = security_header)
+        r = self.__get(url)
         if r.status_code == 200:
-            response = r.content
-            symbol = json.loads(response).get('symbol')
-            bid = json.loads(response).get('bid')
-            ask = json.loads(response).get('ask')
-            return Quote(symbol, bid, ask)
-        return ''
+            return r.content
+        return None
 
     def buy_limit(self, symbol, quantity, price):
         url = 'https://api.stockfighter.io/ob/api/venues/' + self.venue + '/stocks/' + symbol + '/orders'
 
-        data = {}
-        data['account'] = self.account
-        data['venue'] = self.venue
-        data['stock'] = symbol
-        data['qty'] = quantity
-        data['price'] = price
-        data['direction'] = 'buy'
-        data['orderType'] = 'limit'
+        data = {'account': self.account, 'venue': self.venue, 'stock': symbol, 'qty': quantity, 'price': price,
+                'direction': 'buy', 'orderType': 'limit'}
 
-        r = requests.post(url, headers = security_header, data = json.dumps(data))
+        r = requests.post(url, headers=self.security_header, data=json.dumps(data))
         if r.status_code == 200:
             return json.loads(r.content).get('id')
         else:
             return None
 
-    def retrieve_status(self, symbol, order):
-        url = 'https://api.stockfighter.io/ob/api/venues/' + self.venue + '/stocks/' + symbol + '/orders/' + order
-        r = requests.get(url, headers = security_header)
+    def check_if_completed(self, symbol, order):
+        url = 'https://api.stockfighter.io/ob/api/venues/' + self.venue + '/stocks/' + symbol + '/orders/' + `order`
+        r = self.__get(url)
+        if r.status_code == 200:
+            return not json.loads(r.content).get('open')
 
-class Quote:
-    def __init__(self, symbol, bid, ask):
+    def retrieve_orderbook(self, symbol):
+        offers = []
+        req = []
+        url = 'https://api.stockfighter.io/ob/api/venues/' + self.venue + '/stocks/' + symbol
+        r = self.__get(url)
+        if r.status_code == 200:
+            bids = json.loads(r.content).get('bids')
+            for bid in bids:
+                offer = Offer(symbol, bid['price'], bid['qty'])
+                offers.append(offer)
+            asks = json.loads(r.content).get('asks')
+            for ask in asks:
+                request = Request(symbol, ask['price'], ask['qty'])
+                req.append(request)
+            return OrderBook(symbol, offers, req)
+        return None
+
+
+class Offer:
+    def __init__(self, symbol, price, quantity):
         self.symbol = symbol
-        self.bid = bid
-        self.ask = ask
+        self.price = price
+        self.quantity = quantity
 
 
-#import sf_client as sf
-#g = sf.Gateway('BAI24378394', 'OJPEX')
-#g.buy_limit('WBM', 1, 98)
+class Request:
+    def __init__(self, symbol, price, quantity):
+        self.symbol = symbol
+        self.price = price
+        self.quantity = quantity
+
+
+class OrderBook:
+    def __init__(self, symbol, offers, requests):
+        self.symbol = symbol
+        self.offers = offers
+        self.requests = requests
+
