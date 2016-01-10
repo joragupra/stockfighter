@@ -1,5 +1,5 @@
 import trader as t
 
 
-trader = t.Trader('BKB40880867', 'ANJEX')
-trader.buy_a_lot_using_market_price('WAI', 20000, 4000)
+trader = t.Trader('FEB11346579  ', 'GULBEX')
+trader.block('UGES', 20000)

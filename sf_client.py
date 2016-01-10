@@ -45,10 +45,14 @@ class Gateway(object):
         r = self.__get(url)
         if r.status_code == 200:
             bids = json.loads(r.content).get('bids')
+            if not bids:
+                return None
             for bid in bids:
                 offer = Offer(symbol, bid['price'], bid['qty'])
                 offers.append(offer)
             asks = json.loads(r.content).get('asks')
+            if not asks:
+                return None
             for ask in asks:
                 request = Request(symbol, ask['price'], ask['qty'])
                 req.append(request)
@@ -75,4 +79,16 @@ class OrderBook:
         self.symbol = symbol
         self.offers = offers
         self.requests = requests
+
+    @staticmethod
+    def __return__first_if_exists(l):
+        if not l:
+            return None
+        return l[0]
+
+    def best_offer(self):
+        return self.__return__first_if_exists(self.offers)
+
+    def best_request(self):
+        return self.__return__first_if_exists(self.requests)
 

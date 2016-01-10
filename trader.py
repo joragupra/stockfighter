@@ -16,6 +16,24 @@ class Trader(object):
         q = json.loads(data)
         return Quote(q.get('symbol'), q.get('bid'), q.get('ask'))
 
+    def block(self, symbol, quantity):
+        orderbook = self.__orderbook(symbol)
+        bought = 0
+        while bought < quantity:
+            best_offer = orderbook.best_offer()
+            if best_offer:
+                bid_price = best_offer.price + 10
+                bid_quantity = 100
+                self.place_order(symbol, bid_quantity, bid_price)
+                bought += bid_quantity
+            orderbook = self.__orderbook(symbol)
+
+    def __orderbook(self, symbol):
+        orderbook = self.gateway.retrieve_orderbook(symbol)
+        while not orderbook:
+            orderbook = self.gateway.retrieve_orderbook(symbol)
+        return orderbook
+
     def buy_a_lot_using_market_price(self, symbol, quantity, target_price):
         remaining = quantity
         already_bought = 0
